@@ -2,22 +2,23 @@ use std::fmt;
 use rand::Rng;
 
 struct Board {
-    dim: usize,
-    size: usize,
+    dim: u32,
+    size: u32,
     tiles: Vec<char>,
 }
 
 impl Board {
-    fn new(dim: usize) -> Self {
+    fn new(dim: u32) -> Self  {
+        let s = dim*dim;
         Self {
             dim,
-            size: dim*dim,
-            tiles: Vec::with_capacity(dim*dim),
+            size: s,
+            tiles: Vec::with_capacity(s as usize),
         }
     }
 
     fn fill_random(&mut self) {
-        self.tiles = Vec::with_capacity(self.size);
+        self.tiles = Vec::with_capacity(self.size as usize);
         for _ in 0..self.size {
             let num: u32 = rand::thread_rng().gen_range(65..=90);
             let character = char::from_u32(num);
@@ -28,27 +29,21 @@ impl Board {
         }
     }
     
-    fn get_valid_moves(&self, idx_seq: Vec<usize>) -> Vec<usize> {
-        let curr = *idx_seq.iter().last().unwrap();
+    fn get_valid_moves(&self, idx_seq: Vec<u32>) -> Vec<u32> {
+        let curr_idx = *idx_seq.iter().last().unwrap();
+        let (x, y) = (curr_idx % self.dim, curr_idx / self.dim);
         let mut valid_moves = Vec::new();
-        for i in -1..=1 {
-            if i == -1 && curr % self.dim == 0 {
-                continue;
-            }
-            else if i == 1 && (curr + 1) % self.dim == 0 {
-                continue;
-            }
-            for j in -1..=1 {
-                if j == -1 && curr < self.dim {
-                    continue
-                }
-                else if j == 1 && curr > (self.size - self.dim) {
-                    continue
-                }
-                let valid_move = usize::try_from(curr as i32 + i + j * self.dim as i32);
-                match valid_move {
-                    Ok(m) => valid_moves.push(m),
-                    Err(_) => unreachable!(),
+        for dx in -1..=1 {
+            for dy in -1..=1 {
+                let new_x = x as i32 + dx as i32;
+                let new_y = y as i32 + dy as i32;
+
+                let x_in_range = 0 <= new_x && new_x < self.dim as i32;
+                let y_in_range = 0 <= new_y && new_y < self.dim as i32;
+
+                if x_in_range && y_in_range {
+                    let new_idx = (new_x + new_y * self.dim as i32) as u32;
+                    valid_moves.push(new_idx);
                 }
             }
         }
@@ -57,10 +52,10 @@ impl Board {
         return valid_moves;
     }
 
-    fn get_word_from_seq(&self, idx_seq: Vec<usize>) -> String {
+    fn get_word_from_seq(&self, idx_seq: Vec<u32>) -> String {
         let mut result = String::new();
         for &i in idx_seq.iter() {
-            result.push(self.tiles[i]);
+            result.push(self.tiles[i as usize]);
         }
         return result;
     }
@@ -72,7 +67,7 @@ impl fmt::Display for Board {
         for (i, &e) in self.tiles.iter().enumerate() {
             output.push(e);
             output.push_str("   ");
-            if (i + 1) % self.dim == 0 && i + 1 < self.size {
+            if i as u32 + 1 % self.dim == 0 && i as u32 + 1 < self.size {
                 output.push_str("\n\n");
             }
         }
