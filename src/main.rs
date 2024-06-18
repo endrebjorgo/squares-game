@@ -1,20 +1,32 @@
-use std::fmt;
+use std::{fmt, fs, io};
 use rand::Rng;
 
 struct Board {
     dim: u32,
     size: u32,
     tiles: Vec<char>,
+    dictionary: Vec<String>,
 }
 
 impl Board {
-    fn new(dim: u32) -> Self  {
+    fn new(dim: u32, filename: &str) -> Self  {
         let s = dim*dim;
+
         Self {
             dim,
             size: s,
             tiles: Vec::with_capacity(s as usize),
+            dictionary: Self::prepare_dictionary(filename),
         }
+    }
+    
+    fn prepare_dictionary(filename: &str) -> Vec<String> {
+        let mut words = Vec::new();
+
+        for line in fs::read_to_string(filename).unwrap().lines() {
+            words.push(line.to_uppercase().to_string())
+        }
+        return words;
     }
 
     fn fill_random(&mut self) {
@@ -67,7 +79,6 @@ impl Board {
         let mut all_seqs = Vec::new();
 
         let valid_moves = self.get_valid_moves(idx_seq);
-
         
         if valid_moves.is_empty() {
             return Vec::<Vec<u32>>::new();
@@ -80,8 +91,29 @@ impl Board {
             all_seqs.push(seq);
             all_seqs.append(&mut next_seqs);
         }
-
         return all_seqs;
+    }
+
+    fn get_all_words(&self) -> Vec<String> {
+        let mut all_words = Vec::new();
+        let all_seqs = self.get_all_seqs(&Vec::new());
+        for s in all_seqs.iter() {
+            let word = self.get_word_from_seq(s);
+            all_words.push(word);
+        }
+        return all_words;
+    }
+
+    fn get_all_valid_words(&self) -> Vec<String> {
+        let all_words = self.get_all_words();
+        let mut all_valid_words = Vec::new();
+
+        for w in self.dictionary.iter() {
+            all_valid_words.push(String::from(w));
+        }
+        all_valid_words.retain(|x| all_words.contains(x));
+
+        return all_valid_words;
     }
 }
 
@@ -100,7 +132,7 @@ impl fmt::Display for Board {
 }   
 
 fn main() {
-    let mut b = Board::new(3);
+    let mut b = Board::new(3, "assets/words.txt");
     b.fill_random();
     println!("{b}");
 
@@ -112,6 +144,15 @@ fn main() {
     }
 
     let all_seqs = b.get_all_seqs(&Vec::new());
-    println!("{:?}", all_seqs);
+    //println!("{:?}", all_seqs);
     println!("{:?}", all_seqs.len());
+    
+    /*
+    let all_words = b.get_all_words();
+    for w in all_words.iter() {
+        println!("{}", w);
+    }
+    */
+    let valid_words = b.get_all_valid_words();
+    println!("{:?}", valid_words);
 }
