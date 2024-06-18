@@ -29,7 +29,10 @@ impl Board {
         }
     }
     
-    fn get_valid_moves(&self, idx_seq: Vec<u32>) -> Vec<u32> {
+    fn get_valid_moves(&self, idx_seq: &Vec<u32>) -> Vec<u32> {
+        if idx_seq.is_empty() {
+            return (0..self.size).collect();
+        }
         let curr_idx = *idx_seq.iter().last().unwrap();
         let (x, y) = (curr_idx % self.dim, curr_idx / self.dim);
         let mut valid_moves = Vec::new();
@@ -52,12 +55,33 @@ impl Board {
         return valid_moves;
     }
 
-    fn get_word_from_seq(&self, idx_seq: Vec<u32>) -> String {
+    fn get_word_from_seq(&self, idx_seq: &Vec<u32>) -> String {
         let mut result = String::new();
         for &i in idx_seq.iter() {
             result.push(self.tiles[i as usize]);
         }
         return result;
+    }
+
+    fn get_all_seqs(&self, idx_seq: &Vec<u32>) -> Vec<Vec<u32>> {
+        let mut all_seqs = Vec::new();
+
+        let valid_moves = self.get_valid_moves(idx_seq);
+
+        
+        if valid_moves.is_empty() {
+            return Vec::<Vec<u32>>::new();
+        }
+        for &m in valid_moves.iter() {
+            let mut seq = idx_seq.clone();
+            seq.push(m);
+
+            let mut next_seqs = self.get_all_seqs(&seq);
+            all_seqs.push(seq);
+            all_seqs.append(&mut next_seqs);
+        }
+
+        return all_seqs;
     }
 }
 
@@ -67,7 +91,7 @@ impl fmt::Display for Board {
         for (i, &e) in self.tiles.iter().enumerate() {
             output.push(e);
             output.push_str("   ");
-            if i as u32 + 1 % self.dim == 0 && i as u32 + 1 < self.size {
+            if (i as u32 + 1) % self.dim == 0 && (i as u32 + 1) < self.size {
                 output.push_str("\n\n");
             }
         }
@@ -76,14 +100,18 @@ impl fmt::Display for Board {
 }   
 
 fn main() {
-    let mut b = Board::new(4);
+    let mut b = Board::new(3);
     b.fill_random();
     println!("{b}");
 
-    let w = b.get_word_from_seq(vec![0, 4, 5, 10]);
+    let w = b.get_word_from_seq(&vec![0, 1]);
     println!("Sequence [0, 4, 5, 10] => {w}");
 
     for i in 0..b.size {
-        println!("Valid moves from {} => {:?}", i, b.get_valid_moves(vec![i]));
+        println!("Valid moves from {} => {:?}", i, b.get_valid_moves(&vec![i]));
     }
+
+    let all_seqs = b.get_all_seqs(&Vec::new());
+    println!("{:?}", all_seqs);
+    println!("{:?}", all_seqs.len());
 }
